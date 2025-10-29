@@ -4,13 +4,15 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { StatsCards } from './components/StatsCards';
 import { TaskList } from './components/TaskList';
-import { supabase, type Task } from './lib/supabase';
+import { NewTaskModal } from './components/NewTaskModal';
+import { supabase, type Task, type TaskInsert } from './lib/supabase';
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [showNewTaskModal, setShowNewTaskModal] = useState(false);
 
   useEffect(() => {
     loadTasks();
@@ -50,6 +52,23 @@ function App() {
       ));
     } catch (error) {
       console.error('Грешка при ажурирању задатка:', error);
+    }
+  }
+
+  async function createTask(taskData: TaskInsert) {
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([taskData])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setTasks([data, ...tasks]);
+      }
+    } catch (error) {
+      console.error('Грешка при креирању задатка:', error);
     }
   }
 
@@ -168,9 +187,19 @@ function App() {
         </main>
       </div>
 
-      <button className="fixed bottom-8 right-8 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors">
+      <button
+        onClick={() => setShowNewTaskModal(true)}
+        className="fixed bottom-8 right-8 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+      >
         <Plus className="w-6 h-6" />
       </button>
+
+      {showNewTaskModal && (
+        <NewTaskModal
+          onClose={() => setShowNewTaskModal(false)}
+          onSave={createTask}
+        />
+      )}
     </div>
   );
 }
